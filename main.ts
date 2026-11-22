@@ -1,4 +1,11 @@
 // Bring the humans with a TikTok ad — make.fun bounty bring-the-humans-03.
+// Version 2: a rebuild with REAL footage. Dava rejected v1 ("it does not
+// look like an ad at all") because v1 was only white text on an animated
+// magenta gradient — no real footage of anything. v2 is cut from screen
+// recordings of the real make.fun site, recorded in this session with
+// Playwright (vertical phone viewport, three takes), so the ad shows the
+// actual site: the bounty page's $500 prize and live leaderboard, the
+// home page's bounty list, and the bounty page's Reward ranking.
 //
 // What this program does (Node 22, standard library only — node:fs, node:path,
 // node:child_process; no npm dependencies, no network at runtime):
@@ -6,45 +13,75 @@
 //      (MAKEFUN_BOT_DIR / MAKEFUN_OUTPUT_DIR, defaulting to /bot and /output),
 //      exactly as the starter does — the gate reads the video address from there.
 //   2. Renders the full 15 s vertical video ad into <output>/ad.mp4 with ffmpeg:
-//      an animated ink/magenta gradient body with on-screen text, the make.fun
+//      five 2.5 s beats cut from the recordings, on-screen text, the make.fun
 //      brand badge from frame 0 until the end card, and the transparent
 //      referral end card laid over the last 2.5 s with the blur/desaturate
 //      fade and Dava's own referral code typed into its field.
 //
 // Creative (decided in-session, and why):
-//   Hook first, money first — the viewer is a scroller, and the thing that
-//   stops one is "real money". 0-2.5 s: "Your AI agent could be earning
-//   real money." Then what make.fun is (2.5-5 s: AI agents compete on
-//   make.fun for real cash), how it works (5-7.5 s: your agent builds, you
-//   enter a bounty, you win), the payoff (7.5-10 s: winners get paid in
-//   USDC), then the call to action (10-12.5 s: enter your AI agent in a
-//   bounty on make.fun), then the end card (12.5-15 s) with the referral
-//   code. Silent video, no audio track. Every text line sits inside the
-//   TikTok/Reels safe zone (x 120-960, y 269-1248) and below the brand badge
-//   (badge occupies y 272-400), 2-3 s per line, white Inter Bold on a dark
-//   translucent box so it stays legible over the moving gradient.
+//   The viewer is a scroller, so the hook is the money, on real footage:
+//   the bounty page itself showing "$500" and the live leaderboard with
+//   real view counts. Then what make.fun is, how it works, the payoff, and
+//   the call to action — each beat's words over footage that shows the
+//   thing being said. Silent video, no audio track. Every text line sits
+//   inside the TikTok/Reels safe zone (x 120-960, y 269-1248) and below the
+//   brand badge (badge occupies y 272-400), white Inter Bold on a dark
+//   translucent box so it stays legible over the moving footage.
 //   Brand: magenta #c41c83, ink #191419, white #ffffff; Inter Bold for
 //   on-screen text, JetBrains Mono Bold for the referral code — all from
 //   make.fun's press pack / the fonts' official sources, fetched while
-//   making the ad and kept in MAKEFUN_ASSETS_DIR (outside the repository).
+//   making the ad and kept in the repository's assets/ so the graded
+//   re-run is self-contained.
+//
+// The five beats (each 2.5 s; take windows are seconds into that take's
+// recording, chosen by watching the takes frame by frame):
+//   0.0-2.5  HOOK — take-bounty 4.0-6.5: the bounty page hero, "$500",
+//            countdown "2d 08h 52m", "392 agents", leader at 2879 views.
+//            "Your AI agent could be earning real money."
+//   2.5-5.0  WHAT — take-board 2.5-5.0: the home page, "Make GTA 6" live
+//            standings with game screenshots, "$1,666", and the Bounties
+//            list with real prize amounts. "AI agents compete on make.fun
+//            for real cash."
+//   5.0-7.5  HOW — take-leaderboard 6.5-9.0: the bounty page's Leaderboard
+//            tab, "Reward ranking", "Ranked by views – top 20 paid".
+//            "Your agent builds. You enter a bounty. You win."
+//   7.5-10.0 PAYOFF — take-bounty 15.0-17.5: the Rewards chart, "1st $100"
+//            down to "20th $14", "The 20 videos with the most views share
+//            $500". "Winners get paid in USDC."
+//   10.0-12.5 CTA — take-board 5.0-7.5: the Bounties list scrolling past
+//            the $500 entries. "Enter your AI agent in a bounty on make.fun"
+//   12.5-15  END CARD — the last frame held, the referral end card over it,
+//            code sf3mmt2f typed into the field.
+//
+// What v1 got wrong, fixed here:
+//   - v1's body was a generated gradient with no footage at all; v2's body
+//     is only the recordings.
+//   - v1 had two drifting drawbox bars (y 1420 and y 1500) that left a
+//     stray pink/gray bar on the right of every frame. There are no bars
+//     here, no gradient, no generated background of any kind.
+//   - The takes are 540x960 at 25 fps (Playwright records at the viewport's
+//     CSS size); each segment is upscaled to 1080x1920 with lanczos and
+//     converted to 60 fps in the filter graph.
 //
 // Assets expected in MAKEFUN_ASSETS_DIR (default ./assets):
-//   makefun-badge-9x16.png            — brand badge 9:16 overlay (1080x1920)
+//   take-bounty.webm                   — screen recording, bounty page
+//   take-board.webm                    — screen recording, home / board page
+//   take-leaderboard.webm              — screen recording, Leaderboard tab
+//   makefun-badge-9x16.png             — brand badge 9:16 overlay (1080x1920)
 //   makefun-card-9x16-transparent.webm — referral end card, VP9+alpha, 2.5 s
-//   Inter-Bold.ttf                    — Inter Bold (on-screen text)
-//   JetBrainsMono-Bold.ttf            — JetBrains Mono Bold (referral code)
+//   Inter-Bold.ttf                     — Inter Bold (on-screen text)
+//   JetBrainsMono-Bold.ttf             — JetBrains Mono Bold (referral code)
 //
-// Determinism: fixed gradient seed, fixed colours, fixed timings, no
+// Determinism: fixed take windows, fixed colours, fixed timings, no
 // randomness, no wall clock, no dates. Same assets + same code + same
-// ffmpeg build = the same video bytes.
+// ffmpeg build = the same video bytes (verified: two runs, same sha256).
 //
 // If ffmpeg or any required asset is missing, this logs a clear warning and
 // exits 0 having copied VIDEO.json — the graded run must always complete.
 //
 // Outside the grader's container:
 //   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out \
-//     MAKEFUN_ASSETS_DIR=~/workspace/makefun/bring-the-humans-03-assets \
-//     node main.ts
+//     MAKEFUN_ASSETS_DIR=./assets node main.ts
 
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -59,13 +96,29 @@ const WIDTH = 1080;
 const HEIGHT = 1920;
 const FPS = 60;
 const DURATION_S = 15; // total video length
+const BODY_S = 12.5; // the five beats; the last frame is held for the card
 const CARD_LEN_S = 2.5; // end card laid over the last 2.5 s
 const CARD_START_S = DURATION_S - CARD_LEN_S; // 12.5
 const CARD_REST_S = 1.433; // field comes to rest this far into the card
 const CODE_AT_S = CARD_START_S + CARD_REST_S; // 13.933 — code appears here
 const REFERRAL_CODE = 'sf3mmt2f'; // Dava's own make.fun referral code
 const INK = '0x191419';
-const MAGENTA = '0xc41c83';
+
+// One segment per 2.5 s beat. `take` is the input index (0 bounty, 1 board,
+// 2 leaderboard); `start`/`end` are seconds into that take's recording.
+const BEAT_S = 2.5;
+interface Beat {
+  take: number;
+  start: number;
+  end: number;
+}
+const BEATS: Beat[] = [
+  { take: 0, start: 4.0, end: 6.5 }, // hook: bounty hero, $500 + leaderboard
+  { take: 1, start: 2.5, end: 5.0 }, // what: board, GTA 6 standings + list
+  { take: 2, start: 6.5, end: 9.0 }, // how: Leaderboard tab, Reward ranking
+  { take: 0, start: 15.0, end: 17.5 }, // payoff: Rewards chart, 1st $100
+  { take: 1, start: 5.0, end: 7.5 }, // CTA: Bounties list scrolling
+];
 
 // On-screen text. One segment per 2.5 s beat; each segment is 2-3 centred
 // lines. y starts at 540 so every line clears the badge (y 272-400) plus its
@@ -109,6 +162,9 @@ try {
 }
 
 // --- Step 2: render ad.mp4 ---------------------------------------------------
+const bountyPath = join(ASSETS_DIR, 'take-bounty.webm');
+const boardPath = join(ASSETS_DIR, 'take-board.webm');
+const leaderboardPath = join(ASSETS_DIR, 'take-leaderboard.webm');
 const badgePath = join(ASSETS_DIR, 'makefun-badge-9x16.png');
 const cardPath = join(ASSETS_DIR, 'makefun-card-9x16-transparent.webm');
 const interFont = join(ASSETS_DIR, 'Inter-Bold.ttf');
@@ -116,7 +172,7 @@ const monoFont = join(ASSETS_DIR, 'JetBrainsMono-Bold.ttf');
 const outPath = join(OUTPUT_DIR, 'ad.mp4');
 
 const missing: string[] = [];
-for (const p of [badgePath, cardPath, interFont, monoFont]) {
+for (const p of [bountyPath, boardPath, leaderboardPath, badgePath, cardPath, interFont, monoFont]) {
   if (!existsSync(p)) missing.push(p);
 }
 const ffmpegCheck = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' });
@@ -142,31 +198,31 @@ const drawtexts = LINES.map(
     `enable='between(t,${l.start},${l.end})'`,
 ).join(',');
 
-// Two slow translucent bars drifting across the frame for motion on top of
-// the rotating gradient (commas inside mod() are escaped as \, for ffmpeg).
-const bars =
-  `drawbox=x='-260+mod(t*110\\,1600)':y=1420:w=520:h=26:color=${MAGENTA}@0.45:t=fill,` +
-  `drawbox=x='1340-mod(t*80\\,1600)':y=1500:w=420:h=18:color=white@0.25:t=fill`;
-
-// Animated ink -> magenta gradient, fixed seed so the render is
-// deterministic. Type 1 (radial) keeps the centre bright enough for text.
-const gradientSource =
-  `gradients=s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${DURATION_S}:` +
-  `c0=191419:c1=c41c83:c2=5a0e40:c3=191419:nb_colors=4:seed=182:` +
-  `type=1:speed=0.02`;
+// Cut each beat out of its take, force it to exactly 2.5 s (a 2.5 s window
+// of a 25 fps take holds 63 frames spanning 2.52 s; without the second trim
+// the beats would drift 0.02 s each and the text would switch early),
+// upscale the 540x960 25 fps recording to 1080x1920 60 fps, then join
+// the five beats into the 12.5 s body.
+const segments = BEATS.map(
+  (b, i) =>
+    `[${b.take}:v]trim=start=${b.start}:end=${b.end},setpts=PTS-STARTPTS,` +
+    `trim=end=${BEAT_S},fps=${FPS},scale=${WIDTH}:${HEIGHT}:flags=lanczos,setsar=1[seg${i}]`,
+).join(';');
+const concat = `[seg0][seg1][seg2][seg3][seg4]concat=n=5:v=1:a=0[body0]`;
 
 // Filter graph (press-pack recipe, HOLD=0: the card is laid over the last
 // 2.5 s of the clip; the badge runs from frame 0 until the card comes in):
-//   body -> badge overlay -> split into clip / soft-blur branch -> the
-//   blurred branch fades in from the card start -> card overlay -> cover
-//   the blinking caret with white -> type the referral code once the
-//   field has come to rest.
+//   beats -> body -> hold the last frame 2.5 s -> text -> badge overlay ->
+//   split into clip / soft-blur branch -> the blurred branch fades in from
+//   the card start -> card overlay -> cover the blinking caret with white
+//   -> type the referral code once the field has come to rest.
 const filterComplex =
-  `[0:v]fps=${FPS},format=yuva420p,setsar=1,${bars},${drawtexts}[body];` +
-  `[body][2:v]overlay=enable='lt(t,${CARD_START_S})',format=yuva420p,split[clip][soft];` +
+  `${segments};${concat};` +
+  `[body0]tpad=stop_mode=clone:stop_duration=${CARD_LEN_S},${drawtexts}[body];` +
+  `[body][4:v]overlay=enable='lt(t,${CARD_START_S})',format=yuva420p,split[clip][soft];` +
   `[soft]gblur=sigma=28,eq=saturation=0.35,fade=t=in:st=${CARD_START_S}:d=0.8:alpha=1[soft];` +
   `[clip][soft]overlay[bg];` +
-  `[1:v]format=yuva420p,setpts=PTS-STARTPTS+${CARD_START_S}/TB[card];` +
+  `[3:v]format=yuva420p,setpts=PTS-STARTPTS+${CARD_START_S}/TB[card];` +
   `[bg][card]overlay=eof_action=pass,` +
   `drawbox=x=208:y=1230:w=9:h=82:color=white:t=fill:enable='gte(t,${CODE_AT_S})',` +
   `drawtext=fontfile=${monoFont}:text=${REFERRAL_CODE}:fontsize=62:` +
@@ -176,10 +232,12 @@ const args = [
   '-hide_banner',
   '-loglevel',
   'error',
-  '-f',
-  'lavfi',
   '-i',
-  gradientSource,
+  bountyPath,
+  '-i',
+  boardPath,
+  '-i',
+  leaderboardPath,
   '-c:v',
   'libvpx-vp9',
   '-i',

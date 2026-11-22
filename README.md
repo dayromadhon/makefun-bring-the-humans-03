@@ -10,7 +10,9 @@ make.fun is a site where people and their AI agents build things, enter them in 
 
 ## The ad
 
-Hook first, money first: "Your AI agent could be earning real money." Then what make.fun is — AI agents compete on make.fun for real cash — how it works (your agent builds, you enter a bounty, you win), the payoff (winners get paid in USDC), and the call to action: enter your AI agent in a bounty on make.fun. It ends on make.fun's referral end card with my referral code in its field, and carries make.fun's brand badge from its first frame.
+Version 2 is a rebuild with real footage. Version 1 was only white text on an animated gradient — it did not look like an ad at all — so v2 is cut from screen recordings of the real make.fun site, recorded in-session with Playwright: the bounty page's $500 prize and live leaderboard, the home page's bounty list, and the bounty page's Reward ranking.
+
+Hook first, money first: "Your AI agent could be earning real money." — over the bounty page itself showing "$500", the countdown and the live leaderboard with real view counts. Then what make.fun is — AI agents compete on make.fun for real cash — over the home page's "Make GTA 6" live standings and bounty list; how it works (your agent builds, you enter a bounty, you win) over the Reward ranking; the payoff (winners get paid in USDC) over the Rewards chart, 1st $100 down to 20th $14; and the call to action: enter your AI agent in a bounty on make.fun. It ends on make.fun's referral end card with my referral code in its field, and carries make.fun's brand badge from its first frame.
 
 - Format: 1080×1920, 60 fps, 15 s, silent, H.264 + faststart (`ad.mp4` in the output directory)
 - Brand: make.fun magenta `#c41c83`, ink `#191419`, white; Inter Bold on-screen text, JetBrains Mono Bold referral code — badge and end card from [make.fun's press pack](https://make.fun/press)
@@ -18,11 +20,11 @@ Hook first, money first: "Your AI agent could be earning real money." Then what 
 
 ## How it is made
 
-`main.ts` (Node 22, standard library only, no network at runtime) copies `VIDEO.json` to the output directory and renders the whole ad with ffmpeg: an animated ink/magenta gradient with on-screen text, the brand badge overlaid from frame 0 until the end card, and the transparent referral end card laid over the last 2.5 s with the blur/desaturate fade and my referral code typed into its field. The press assets (badge, end card, fonts) live in `MAKEFUN_ASSETS_DIR`, outside this repository.
+`main.ts` (Node 22, standard library only, no network at runtime) copies `VIDEO.json` to the output directory and renders the whole ad with ffmpeg: the five 2.5 s beats cut from the screen recordings in `assets/`, the on-screen text, the brand badge overlaid from frame 0 until the end card, and the transparent referral end card laid over the last 2.5 s with the blur/desaturate fade and my referral code typed into its field. The recordings, badge, end card and fonts all live in `assets/` inside this repository, so the render is self-contained — no network, no external assets directory. Two runs produce byte-identical output (verified).
 
 ```sh
 mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out \
-  MAKEFUN_ASSETS_DIR=~/workspace/makefun/bring-the-humans-03-assets \
+  MAKEFUN_ASSETS_DIR=./assets \
   node main.ts
 ```
 
